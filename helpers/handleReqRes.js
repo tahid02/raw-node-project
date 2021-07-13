@@ -44,16 +44,23 @@ handler.handleReqRes = (req, res) => {
     : notFoundHandler;
 
   req.on("data", (chunk) => {
+    // here , we are collecting data from request as chunk . that means , we are streaming the data and collecting every chunk in fullData variable after decoding
     fullData += decode.write(chunk); // now , 'decode' object has a method called write() which will take the chunks as argument and decode it as utf-8
   });
 
   req.on("end", () => {
+    // while data collection streaming is done , we are ending decoding. Then calling the function which will provide data to user's requested specific url . Then  sending the response
     fullData += decode.end();
+    requestedProperties.body = parseJSON(fullData);
+
     // suppose selected path is 'sample' , so here we are calling sampleHandler() function below
     selectedPath(requestedProperties, (statusCode, payload) => {
       statusCode = typeof statusCode === "number" ? statusCode : 500;
       payload = typeof payload === "object" ? payload : {};
       const payloadString = JSON.stringify(payload); // just making the payload as json formate
+
+      // return  response to user
+      res.setHeader("Content-Type", "application/json"); // like sending  meta data wile user requesting, server can also send metadata to user while response
       res.writeHead(statusCode);
       res.write(payloadString);
       res.end("your post is complete");

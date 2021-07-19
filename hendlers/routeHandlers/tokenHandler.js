@@ -158,7 +158,39 @@ handler._token.put = (requestedProperties, callback) => {
     });
   }
 };
-// handler._token.delete = (requestedProperties, callback) => {};
+handler._token.delete = (requestedProperties, callback) => {
+  const id =
+    typeof requestedProperties.body?.id === "string" &&
+    requestedProperties.body.id.trim().length === 20 //if this is true .. then ..
+      ? requestedProperties.body.id
+      : false;
+
+  if (id) {
+    data.read("token", id, (err, tokenDataDelete) => {
+      if (!err && tokenDataDelete) {
+        data.delete("token", id, (err1) => {
+          if (!err1) {
+            callback(400, {
+              message: "token deletion successful",
+            });
+          } else {
+            callback(400, {
+              error: "could not delete the token",
+            });
+          }
+        });
+      } else {
+        callback(400, {
+          error: "token not found",
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      error: "user not found",
+    });
+  }
+};
 
 //export
 module.exports = handler;

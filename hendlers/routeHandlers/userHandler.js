@@ -9,6 +9,7 @@
 const { parseJSON } = require("../../helpers/utilities");
 const utilities = require("../../helpers/utilities");
 const data = require("../../lib/data");
+const tokenHandler = require("./tokenHandler");
 //module scaffolding
 const handler = {};
 // main part
@@ -103,24 +104,45 @@ handler._user.get = (requestedProperties, callback) => {
       ? requestedProperties.query.phoneNumber
       : false;
 
-  data.read("users", phoneNumber, (err, userData) => {
-    if (!err && userData) {
-      // if not error , that means > file is exist( user has signed up before ), so we can provide him data\
-      const copiedUser = { ...parseJSON(userData) };
-      if (userData.password === utilities.hash(getPassword)) {
-        delete copiedUser?.password; // we shouldn't directly delete property.. rather we should copy and then delete from the copied object
-        callback(200, userData); // we won't send password
+  if (phoneNumber) {
+    // getting token from get req Header
+    const token = typeof (requestedProperties.headerObject.token === "string") // we are expecting that .. user will send his token through 'token' named property in request's Header
+      ? requestedProperties.headerObject.token
+      : false;
+
+    // verifying if this token is valid
+    tokenHandler._token.verify(phoneNumber, token, (validToken) => {
+      // this validToken will get true or false as argument
+      if (validToken) {
+        data.read("users", phoneNumber, (err, userData) => {
+          if (!err && userData) {
+            // if not error , that means > file is exist( user has signed up before ), so we can provide him data\
+            const copiedUser = { ...parseJSON(userData) };
+            if (userData.password === utilities.hash(getPassword)) {
+              delete copiedUser?.password; // we shouldn't directly delete property.. rather we should copy and then delete from the copied object
+              callback(200, userData); // we won't send password
+            } else {
+              callback(200, {
+                message: "error in sending data",
+              });
+            }
+          } else {
+            callback(404, {
+              error: "user does not exist",
+            });
+          }
+        });
       } else {
-        callback(200, {
-          message: "error in sending data",
+        callback(403, {
+          error: "requested user not found",
         });
       }
-    } else {
-      callback(404, {
-        error: "user does not exist",
-      });
-    }
-  });
+    });
+  } else {
+    callback(404, {
+      error: "phone number not valid",
+    });
+  }
 };
 
 handler._user.put = (requestedProperties, callback) => {
@@ -154,34 +176,49 @@ handler._user.put = (requestedProperties, callback) => {
     if (firstName || lastName || password) {
       // if they pass the validation
 
-      data.read("users", phoneNumber, (err, userDataUpdate) => {
-        const copiedUserToUpdate = { ...parseJSON(userDataUpdate) };
-        if (!err && userData) {
-          if (firstName) {
-            copiedUserToUpdate.firstName = firstName;
-          }
-          if (lastName) {
-            copiedUserToUpdate.lastName = lastName;
-          }
-          if (password) {
-            copiedUserToUpdate.password = utilities.hash(password);
-          }
+      // getting token from get req Header
+      const token = typeof (requestedProperties.headerObject.token === "string") // we are expecting that .. user will send his token through 'token' named property in request's Header
+        ? requestedProperties.headerObject.token
+        : false;
 
-          // store to database
-          data.update("users", phoneNumber, userData, (errUpdate) => {
-            if (!errUpdate) {
-              callback(200, {
-                message: " user update successful",
+      // verifying if this token is valid
+      tokenHandler._token.verify(phoneNumber, token, (validToken) => {
+        // this validToken will get true or false as argument
+        if (validToken) {
+          data.read("users", phoneNumber, (err, userDataUpdate) => {
+            const copiedUserToUpdate = { ...parseJSON(userDataUpdate) };
+            if (!err && userData) {
+              if (firstName) {
+                copiedUserToUpdate.firstName = firstName;
+              }
+              if (lastName) {
+                copiedUserToUpdate.lastName = lastName;
+              }
+              if (password) {
+                copiedUserToUpdate.password = utilities.hash(password);
+              }
+
+              // store to database
+              data.update("users", phoneNumber, userData, (errUpdate) => {
+                if (!errUpdate) {
+                  callback(200, {
+                    message: " user update successful",
+                  });
+                } else {
+                  callback(500, {
+                    error: "something went wrong",
+                  });
+                }
               });
             } else {
-              callback(500, {
-                error: "something went wrong",
+              callback(404, {
+                error: "user not found",
               });
             }
           });
         } else {
-          callback(404, {
-            error: "user not found",
+          callback(403, {
+            error: "requested user not found",
           });
         }
       });
@@ -202,30 +239,38 @@ handler._user.delete = (requestedProperties, callback) => {
       : false;
 
   if (phoneNumber) {
-    data.read("users", phoneNumber, (err, userDataDelete) => {
-      if (!err && userDataDelete) {
-        data.delete("users", phoneNumber, (err1) => {
-          if (!err1) {
-            callback(400, {
-              message: "user deletion successful",
-            });
-          } else {
-            callback(400, {
-              error: "could not delete the user",
-            });
-          }
-        });
-      } else {
-        callback(400, {
-          error: "user not found",
-        });
-      }
-    });
+    if (validToken) {
+      // if token is valid .. then we will do next stuffs
+      data.read("users", phoneNumber, (err, userDataDelete) => {
+        if (!err && userDataDelete) {
+          data.delete("users", phoneNumber, (err1) => {
+            if (!err1) {
+              callback(400, {
+                message: "user deletion successful",
+              });
+            } else {
+              callback(400, {
+                error: "could not delete the user",
+              });
+            }
+          });
+        } else {
+          callback(400, {
+            error: "user not found",
+          });
+        }
+      });
+    } else {
+      callback(403, {
+        error: "requested user not found",
+      });
+    }
   } else {
     callback(400, {
       error: "user not found",
     });
   }
 };
+
 //export
 module.exports = handler;

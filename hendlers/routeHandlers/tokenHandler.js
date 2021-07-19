@@ -191,6 +191,20 @@ handler._token.delete = (requestedProperties, callback) => {
     });
   }
 };
-
+// verifying token.. this is just a function.. it is not connected with request or response like post, get...
+handler._token.verify = (id, phoneNumber, callback) => {
+  // this callback in parameter is not the callback function, that we got as parameter in tokeHandler() function.. this is completely different one
+  data.read("token", id, (err, tokenData) => {
+    if (!err && tokenData) {
+      const { phone, expires } = parseJSON(tokenData);
+      if (phone && expires > data.now()) {
+      } else {
+        callback(false);
+      }
+    } else {
+      callback(false);
+    }
+  });
+};
 //export
 module.exports = handler;

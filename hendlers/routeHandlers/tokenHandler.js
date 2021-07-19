@@ -12,14 +12,16 @@ const {
   createRandomString,
 } = require("../../helpers/utilities");
 const data = require("../../lib/data");
+const { token } = require("../../routes");
 //module scaffolding
 const handler = {};
+handler._token = {};
 // main part
 handler.tokenHandler = (requestedProperties, callback) => {
   // checking if requested method is valid
   const acceptedMethod = ["get", "post", "put", "delete"];
   if (acceptedMethod.includes(requestedProperties.method)) {
-    handler._user[requestedProperties.method](requestedProperties, callback); // calling the requested method's function
+    handler._token[requestedProperties.method](requestedProperties, callback); // calling the requested method's function
   } else {
     callBack(405, {
       // if we don't want to give access > status code > 405
@@ -82,7 +84,27 @@ handler._token.post = (requestedProperties, callback) => {
     });
   }
 };
-// handler._token.get = (requestedProperties, callback) => {};
+
+// user requesting in get method and sent the token in query
+handler._token.get = (requestedProperties, callback) => {
+  const id =
+    typeof requestedProperties.query?.id === "string" &&
+    requestedProperties.query.id.trim().length === 20 //if this is true .. then ..
+      ? requestedProperties.query.id
+      : false;
+
+  data.read("token", id, (err, tokenData) => {
+    if (!err && tokenData) {
+      // if not error , that means > file is exist( user has signed up before ), so we can provide him data\
+      callback(200, token);
+    } else {
+      callback(404, {
+        error: "no token found", // if the id , that user sent in query of get method is not found in .data/token folder
+      });
+    }
+  });
+};
+
 // handler._token.put = (requestedProperties, callback) => {};
 // handler._token.delete = (requestedProperties, callback) => {};
 

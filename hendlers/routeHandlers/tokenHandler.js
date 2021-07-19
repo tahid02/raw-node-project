@@ -31,6 +31,7 @@ handler.tokenHandler = (requestedProperties, callback) => {
 };
 
 // when user request in post method( that means when he req for log in .. > we take his data> check if he has signed in > then provide him a token )
+// I manually added a file(sjsjsjssjsj.js) in token from lib> data.js // but user will do this through this post method
 handler._token.post = (requestedProperties, callback) => {
   const phoneNumber =
     typeof requestedProperties.body?.phoneNumber === "string" &&
@@ -79,7 +80,7 @@ handler._token.post = (requestedProperties, callback) => {
       }
     });
   } else {
-    callBack(400, {
+    callback(400, {
       error: "provided data is not valid",
     });
   }
@@ -105,7 +106,58 @@ handler._token.get = (requestedProperties, callback) => {
   });
 };
 
-// handler._token.put = (requestedProperties, callback) => {};
+// when user req in put method to extend token's expiry time .. in body .. user will send in put method's body> something like this> {id:'randomString',extend:true}
+handler._token.put = (requestedProperties, callback) => {
+  const id =
+    typeof requestedProperties.query?.id === "string" &&
+    requestedProperties.query.id.trim().length === 20 //if this is true .. then ..
+      ? requestedProperties.query.id
+      : false;
+  // we know, in put method , while user is requesting ,they  send their data in request body.. user will send a property "extend" in it's body
+  const extend =
+    typeof requestedProperties.body?.extend === "boolean" &&
+    requestedProperties.body.extend === true //if this is true .. then ..
+      ? true
+      : false;
+
+  if (id && extend) {
+    data.read("token", id, (errPut, tokenData) => {
+      if (!errPut && tokenData) {
+        // this token data is in string .. so we have to parse it before use
+        const tokenObject = parseJSON(tokenData);
+        if (tokenObject.expires > Date.now()) {
+          // tokenObject.expires is  a number and Date.now() also return a number .. so we can compare them
+          // it will be true ,  if token is not already expired
+          tokenObject.expires = Date.now + 60 * 60 * 1000; // extending one more hour
+          // updating this expansion in database
+          data.update("token", id, tokenObject, (errUpdate) => {
+            if (!errUpdate) {
+              callback(200, {
+                message: "token expiration time updated successfully",
+              });
+            } else {
+              callback(500, {
+                error: "unfortunately couldn't update the token expiry date ",
+              });
+            }
+          });
+        } else {
+          callback(404, {
+            error: "token already expired ",
+          });
+        }
+      } else {
+        callback(404, {
+          error: "could not read the file. may be there is no such a file ",
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      error: "your provided data is not valid",
+    });
+  }
+};
 // handler._token.delete = (requestedProperties, callback) => {};
 
 //export

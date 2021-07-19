@@ -123,7 +123,7 @@ handler._user.get = (requestedProperties, callback) => {
   });
 };
 
-handler._user.patch = (requestedProperties, callback) => {
+handler._user.put = (requestedProperties, callback) => {
   const firstName =
     typeof requestedProperties.body?.firstName === "string" &&
     requestedProperties.body.firstName.trim().length //if this is true .. then ..

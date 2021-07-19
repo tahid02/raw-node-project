@@ -33,5 +33,15 @@ utilities.hash = (pass) => {
   return false;
 };
 
+// create random string  as token
+utilities.createRandomString = (stringLength) => {
+  const possibleCharacters = "abcdefghijklmnopqrstuvwxyz1234567890";
+  let output = "";
+  for (let index = 1; index <= stringLength; index++) {
+    let randomNumber = Math.floor(Math.random() * possibleCharacters);
+    output += possibleCharacters[randomNumber];
+  }
+};
+
 //export
 module.exports = utilities;

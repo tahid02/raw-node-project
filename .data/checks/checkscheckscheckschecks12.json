@@ -1,1 +1,8 @@
-{"id":"checkscheckscheckschecks12","userPhone":"01234789010","protocol":"https","url":"google.com","method":"GET","successCodes":[200,300],"timeoutSeconds":4}
+{"id":"checkscheckscheckschecks12",
+    "userPhone":"01234789010",
+    "protocol":"https",
+    "url":"google.com",
+    "method":"GET",
+    "successCodes":[200,300],
+    "timeoutSeconds":4
+}

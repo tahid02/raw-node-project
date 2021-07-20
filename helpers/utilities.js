@@ -28,11 +28,12 @@ utilities.hash = (pass) => {
       .createHmac("sha256", "fromEnv")
       .update(pass)
       .digest("hex");
+    console.log({ hash });
     return hash;
   }
   return false;
 };
-
+utilities.hash("hasHThisPass");
 // create random string  as token
 utilities.createRandomString = (stringLength) => {
   const possibleCharacters = "abcdefghijklmnopqrstuvwxyz1234567890";
